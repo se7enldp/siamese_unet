@@ -20,9 +20,9 @@ Estimated Total Size (MB): 316.86
 '''
 
 
-class Baseline(nn.Module):
+class Siamese_Unet(nn.Module):
     def __init__(self, img_ch=1, num_classes=6, depth=3):
-        super(Baseline, self).__init__()
+        super(Siamese_Unet, self).__init__()
         chs = [36, 72, 144, 288, 360]
         chs2 = [36, 72, 144, 288, 360]
         self.pool = nn.MaxPool2d(2, 2)
@@ -199,7 +199,7 @@ if __name__ == '__main__':
     x1 = torch.randn([2, 1, 256, 256]).cuda()
     x2 = torch.randn([2, 1, 256, 256]).cuda()
     x3 = torch.randn([2, 1, 256, 256]).cuda()
-    net = Baseline(num_classes=6, depth=2).cuda()
+    net = Siamese_Unet(num_classes=6, depth=2).cuda()
     # summary(net, input_size=[(1, 64, 64), (1, 64, 64), (1, 64, 64)])
     pred = net(x1, x2, x3)
     print(pred[0].shape)

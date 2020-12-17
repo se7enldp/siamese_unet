@@ -11,6 +11,7 @@ except ImportError:
     pil_image = None
     ImageEnhance = None
 
+
 def mask_to_onehot(mask, palette):
     """
     Converts a segmentation mask (H, W, C) to (H, W, K) where the last dim is a one
@@ -88,32 +89,3 @@ def array_to_img(x, data_format='channels_last', scale=True, dtype='float32'):
     else:
         raise ValueError('Unsupported channel number: %s' % (x.shape[2],))
 
-
-def semantic_edge_detection(im, palette):
-    """
-    :param im: shape [H, W, C]
-    :param palette:
-    :return: [H, W]
-    """
-    im = torch.from_numpy(im).unsqueeze(0).permute((0, 3, 1, 2)).contiguous()
-    Y = np.array([[0, 0, 0], [1, -1, 0], [0, 0, 0]], dtype='float32')
-    X = np.array([[0, 1, 0], [0, -1, 0], [0, 0, 0]], dtype='float32')
-
-    kernely = torch.FloatTensor(Y).expand(1, 1, 3, 3)
-    kernelx = torch.FloatTensor(X).expand(1, 1, 3, 3)
-    weighty = nn.Parameter(data=kernely, requires_grad=False)
-    weightx = nn.Parameter(data=kernelx, requires_grad=False)
-    edgey = torch.abs(F.conv2d(im, weighty, padding=1))
-    edgex = torch.abs(F.conv2d(im, weightx, padding=1))
-
-    edge = torch.where(edgex > 0, edgex, edgey)
-    semantic_edge = edge.detach()
-    semantic_edge = np.array(semantic_edge.squeeze())
-    for i in range(len(palette) - 1):
-        semantic_edge[np.logical_and(semantic_edge > palette[i][0], semantic_edge < palette[i+1][0])] = palette[i+1][0]
-
-    # 获取二进制边界
-    binary_edge = semantic_edge.copy()
-    binary_edge[binary_edge>0] = 255
-
-    return semantic_edge, binary_edge

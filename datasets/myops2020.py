@@ -98,13 +98,11 @@ class MyoPS2020(data.Dataset):
 
     def __getitem__(self, index):
 
-        # 记录原始尺寸
         init_size = 0
         if self.mode is not 'test':
             img_path, mask_path = self.imgs[index]
             file_name = mask_path.split('\\')[-1]
 
-            # 多模态原图像加载
             imgs = []
             masks = []
             for path in img_path:
@@ -137,11 +135,8 @@ class MyoPS2020(data.Dataset):
                     imgs[i] = (imgs[i] - c0_lge_t2_mean_std[i][0]) / c0_lge_t2_mean_std[i][1]
 
             mask = np.array(masks[0])
-            # Image.open读取灰度图像时shape=(H, W) 而非(H, W, 1)
-            # 因此先扩展出通道维度，以便在通道维度上进行one-hot映射
             mask = np.expand_dims(mask, axis=2)
             mask = helpers.mask_to_onehot(mask, self.palette)
-            # shape from (H, W, C) to (C, H, W)
             mask = mask.transpose([2, 0, 1])
 
             if self.target_transform is not None:
@@ -152,7 +147,6 @@ class MyoPS2020(data.Dataset):
             img_path = self.imgs[index]
             file_name = img_path[0].split('\\')[-1]
 
-            # 多模态原图像加载
             imgs = []
             for path in img_path:
                 img = np.load(path)
@@ -182,69 +176,3 @@ class MyoPS2020(data.Dataset):
         return len(self.imgs)
 
 
-if __name__ == '__main__':
-    np.set_printoptions(threshold=9999999)
-
-    from torch.utils.data import DataLoader
-    import torchvision.transforms as tf
-    import utils.image_transforms as joint_transforms
-    import utils.transforms as extended_transforms
-    tf.ToTensor()
-    def demo():
-        train_path = r'../media/Datasets/MyoPS2020/npy'
-        val_path = r'../media/Datasets/MyoPS2020/npy'
-        test_path = r'../media/Datasets/MyoPS2020/test/npy'
-
-        center_crop = joint_transforms.CenterCrop(256)
-        tes_center_crop = joint_transforms.SingleCenterCrop(256)
-        # roi_crop = joint_transforms.ROICrop()
-        train_input_transform = extended_transforms.NpyToTensor()
-
-        target_transform = extended_transforms.MaskToTensor()
-
-        train_set = MyoPS2020(train_path, 'train', 1,
-                              joint_transform=None, roi_crop=None, center_crop=center_crop,
-                              transform=train_input_transform, target_transform=target_transform)
-        train_loader = DataLoader(train_set, batch_size=1, shuffle=False)
-
-        # test_set = MyoPS2020(test_path, 'test', 1,
-        #                       joint_transform=None, roi_crop=None, center_crop=tes_center_crop,
-        #                       transform=train_input_transform, target_transform=None)
-        # test_loader = DataLoader(test_set, batch_size=1, shuffle=False)
-
-        # 求训练集的均值和方差
-        # get_mean_std(train_loader)
-
-        for (inputs, mask), file_name in train_loader:
-            cmr = []
-            padsize = 20
-            # print(file_name[0], (init_size[0].item(), init_size[1].item()))
-            print(mask.shape)
-            for i in range(len(inputs)):
-                # m = np.rot90(np.array(inputs[i].squeeze()) * c0_lge_t2_mean_std[i][1] + c0_lge_t2_mean_std[i][0])
-                m = np.array(inputs[i].squeeze() * c0_lge_t2_mean_std[i][1] + c0_lge_t2_mean_std[i][0])
-                m = helpers.array_to_img(np.expand_dims(m, 2))
-                m = np.pad(m, ((padsize, padsize), (padsize, padsize)), 'constant', constant_values=(0, 0))
-                cmr.append(m)
-            gt = helpers.onehot_to_mask(np.array(mask.squeeze()).transpose([1, 2, 0]), palette)
-            gt = helpers.array_to_img(gt)
-            gt = np.pad(gt, ((padsize, padsize), (padsize, padsize)), 'constant', constant_values=(0, 0))
-
-            cv2.imshow('C0   LGE   T2   GT', np.uint8(np.hstack([*cmr, gt])))
-            cv2.waitKey(1000)
-        #
-        # for inputs, file_name, init_size in test_loader:
-        #     cmr = []
-        #     padsize = 20
-        #     print(file_name[0], (init_size[0].item(), init_size[1].item()))
-        #     for i in range(len(inputs)):
-        #         # m = np.rot90(np.array(inputs[i].squeeze()) * c0_lge_t2_mean_std[i][1] + c0_lge_t2_mean_std[i][0])
-        #         m = np.array(inputs[i].squeeze() * c0_lge_t2_mean_std[i][1] + c0_lge_t2_mean_std[i][0])
-        #         m = helpers.array_to_img(np.expand_dims(m, 2))
-        #         m = np.pad(m, ((padsize, padsize), (padsize, padsize)), 'constant', constant_values=(0, 0))
-        #         cmr.append(m)
-        #
-        #     cv2.imshow('C0   LGE   T2 ', np.uint8(np.hstack([*cmr])))
-        #     cv2.waitKey(0)
-
-    demo()
