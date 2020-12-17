@@ -6,20 +6,6 @@ import torch.nn.functional as F
 from networks.custom_modules.basic_modules import *
 
 
-'''
-================================================================
-Total params: 43,782,132
-Trainable params: 43,782,132
-Non-trainable params: 0
-----------------------------------------------------------------
-Input size (MB): 0.00
-Forward/backward pass size (MB): 149.84
-Params size (MB): 167.02
-Estimated Total Size (MB): 316.86
-----------------------------------------------------------------
-'''
-
-
 class Siamese_Unet(nn.Module):
     def __init__(self, img_ch=1, num_classes=6, depth=3):
         super(Siamese_Unet, self).__init__()
@@ -200,6 +186,5 @@ if __name__ == '__main__':
     x2 = torch.randn([2, 1, 256, 256]).cuda()
     x3 = torch.randn([2, 1, 256, 256]).cuda()
     net = Siamese_Unet(num_classes=6, depth=2).cuda()
-    # summary(net, input_size=[(1, 64, 64), (1, 64, 64), (1, 64, 64)])
     pred = net(x1, x2, x3)
     print(pred[0].shape)
